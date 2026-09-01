@@ -3,14 +3,130 @@
 require_once "../includes/header.php";
 require_once "../includes/sidebar.php";
 require_once "../config/database.php";
+// ==============================
+// PAGINAÇÃO
+// ==============================
+
+$por_pagina = 10;
+
+$pagina = filter_input(
+    INPUT_GET,
+    "pagina",
+    FILTER_VALIDATE_INT
+);
+
+if (!$pagina || $pagina < 1) {
+    $pagina = 1;
+}
+
+$offset = ($pagina - 1) * $por_pagina;
 
 
-// Buscar clientes
-$sql = "SELECT id_cliente, nome, telefone, email, endereco, data_criacao
-        FROM clientes
-        ORDER BY id_cliente DESC";
+// ==============================
+// PESQUISA
+// ==============================
 
-$resultado = $conn->query($sql);
+$pesquisa = trim($_GET["pesquisa"] ?? "");
+
+
+// ==============================
+// CONTAR CLIENTES
+// ==============================
+
+if ($pesquisa !== "") {
+
+    $sql_count = "SELECT COUNT(*) AS total
+                  FROM clientes
+                  WHERE nome LIKE ?
+                     OR telefone LIKE ?
+                     OR email LIKE ?";
+
+    $stmt_count = $conn->prepare($sql_count);
+
+    $termo = "%" . $pesquisa . "%";
+
+    $stmt_count->bind_param(
+        "sss",
+        $termo,
+        $termo,
+        $termo
+    );
+
+} else {
+
+    $sql_count = "SELECT COUNT(*) AS total
+                  FROM clientes";
+
+    $stmt_count = $conn->prepare($sql_count);
+}
+
+$stmt_count->execute();
+
+$resultado_count = $stmt_count->get_result();
+
+$total_clientes = $resultado_count
+    ->fetch_assoc()["total"];
+
+$stmt_count->close();
+
+
+// ==============================
+// TOTAL DE PÁGINAS
+// ==============================
+
+$total_paginas = ceil(
+    $total_clientes / $por_pagina
+);
+
+
+// ==============================
+// BUSCAR CLIENTES
+// ==============================
+
+if ($pesquisa !== "") {
+
+    $sql = "SELECT id_cliente, nome, telefone, email, endereco, data_criacao
+            FROM clientes
+            WHERE nome LIKE ?
+               OR telefone LIKE ?
+               OR email LIKE ?
+            ORDER BY id_cliente DESC
+            LIMIT ? OFFSET ?";
+
+    $stmt = $conn->prepare($sql);
+
+    $stmt->bind_param(
+        "sssii",
+        $termo,
+        $termo,
+        $termo,
+        $por_pagina,
+        $offset
+    );
+
+    $stmt->execute();
+
+    $resultado = $stmt->get_result();
+
+} else {
+
+    $sql = "SELECT id_cliente, nome, telefone, email, endereco, data_criacao
+            FROM clientes
+            ORDER BY id_cliente DESC
+            LIMIT ? OFFSET ?";
+
+    $stmt = $conn->prepare($sql);
+
+    $stmt->bind_param(
+        "ii",
+        $por_pagina,
+        $offset
+    );
+
+    $stmt->execute();
+
+    $resultado = $stmt->get_result();
+}
 $sucesso = $_GET["sucesso"] ?? "";
 
 ?>
@@ -70,6 +186,42 @@ $sucesso = $_GET["sucesso"] ?? "";
             </a>
 
         </div>
+        <form
+    method="GET"
+    class="mb-4"
+>
+
+    <div class="input-group">
+
+        <input
+            type="search"
+            name="pesquisa"
+            class="form-control"
+            placeholder="Pesquisar por nome, telefone ou email..."
+            value="<?php echo htmlspecialchars($pesquisa); ?>"
+        >
+
+        <button
+            type="submit"
+            class="btn btn-success"
+        >
+            Pesquisar
+        </button>
+
+        <?php if ($pesquisa !== ""): ?>
+
+            <a
+                href="index.php"
+                class="btn btn-outline-secondary"
+            >
+                Limpar
+            </a>
+
+        <?php endif; ?>
+
+    </div>
+
+</form>
 
 
         <!-- TABELA -->
@@ -225,6 +377,62 @@ $sucesso = $_GET["sucesso"] ?? "";
                         </tbody>
 
                     </table>
+                    <?php if ($total_paginas > 1): ?>
+
+    <nav class="mt-4">
+
+        <ul class="pagination justify-content-center">
+
+            <!-- ANTERIOR -->
+
+            <li class="page-item <?php echo ($pagina <= 1) ? 'disabled' : ''; ?>">
+
+                <a
+                    class="page-link"
+                    href="?pagina=<?php echo $pagina - 1; ?>&pesquisa=<?php echo urlencode($pesquisa); ?>"
+                >
+                    Anterior
+                </a>
+
+            </li>
+
+
+            <!-- PÁGINAS -->
+
+            <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
+
+                <li class="page-item <?php echo ($pagina == $i) ? 'active' : ''; ?>">
+
+                    <a
+                        class="page-link"
+                        href="?pagina=<?php echo $i; ?>&pesquisa=<?php echo urlencode($pesquisa); ?>"
+                    >
+                        <?php echo $i; ?>
+                    </a>
+
+                </li>
+
+            <?php endfor; ?>
+
+
+            <!-- PRÓXIMA -->
+
+            <li class="page-item <?php echo ($pagina >= $total_paginas) ? 'disabled' : ''; ?>">
+
+                <a
+                    class="page-link"
+                    href="?pagina=<?php echo $pagina + 1; ?>&pesquisa=<?php echo urlencode($pesquisa); ?>"
+                >
+                    Próxima
+                </a>
+
+            </li>
+
+        </ul>
+
+    </nav>
+
+<?php endif; ?>
 
                 </div>
 
