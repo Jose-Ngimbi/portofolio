@@ -112,14 +112,9 @@ $sql_vendas_dia = "
     SELECT
         DATE(data_venda) AS dia,
         COALESCE(SUM(total), 0) AS total
-
     FROM vendas
-
-    WHERE DATE(data_venda)
-    BETWEEN ? AND ?
-
+    WHERE DATE(data_venda) BETWEEN ? AND ?
     GROUP BY DATE(data_venda)
-
     ORDER BY dia ASC
 ";
 
@@ -133,24 +128,43 @@ $stmt->bind_param(
 
 $stmt->execute();
 
-$vendas_dia = $stmt->get_result();
+$resultado_vendas_dia = $stmt->get_result();
 
-$dados_grafico = [];
+$vendas_por_dia = [];
 
-while ($venda = $vendas_dia->fetch_assoc()) {
+while ($venda = $resultado_vendas_dia->fetch_assoc()) {
 
-    $dados_grafico[] = [
-        "dia" => date(
-            "d/m",
-            strtotime($venda["dia"])
-        ),
-
-        "total" => (float) $venda["total"]
-    ];
+    $vendas_por_dia[$venda["dia"]] =
+        (float) $venda["total"];
 
 }
 
-$stmt->close();    
+$stmt->close();
+
+
+// ==========================================
+// CRIAR TODOS OS DIAS DO PERÍODO
+// ==========================================
+
+$dados_grafico = [];
+
+$data_atual = new DateTime($data_inicio);
+$data_final = new DateTime($data_fim);
+
+while ($data_atual <= $data_final) {
+
+    $dia = $data_atual->format("Y-m-d");
+
+    $dados_grafico[] = [
+
+        "dia" => $data_atual->format("d/m"),
+
+        "total" => $vendas_por_dia[$dia] ?? 0
+
+    ];
+
+    $data_atual->modify("+1 day");
+}
 
 
 // ==========================================
@@ -375,6 +389,69 @@ $stmt->close();
 
 
     <section class="content">
+        <!-- CABEÇALHO PARA IMPRESSÃO -->
+
+<div class="cabecalho-impressao">
+
+    <h1>BizFlow</h1>
+
+    <p>
+        Sistema de Gestão Empresarial
+    </p>
+
+    <h2>
+        Relatório de Vendas
+    </h2>
+
+    <div class="info-relatorio">
+
+        <span>
+            <strong>Período:</strong>
+
+            <?php
+
+            if ($periodo === "hoje") {
+
+                echo "Hoje";
+
+            } elseif ($periodo === "ontem") {
+
+                echo "Ontem";
+
+            } elseif ($periodo === "7dias") {
+
+                echo "Últimos 7 dias";
+
+            } elseif ($periodo === "ano") {
+
+                echo "Este ano";
+
+            } else {
+
+                echo "Este mês";
+
+            }
+
+            ?>
+
+        </span>
+
+
+        <span>
+
+            <strong>Data de geração:</strong>
+
+            <?php
+
+            echo date("d/m/Y H:i");
+
+            ?>
+
+        </span>
+
+    </div>
+
+</div>
 
 
         <!-- CABEÇALHO -->
@@ -386,6 +463,37 @@ $stmt->close();
                 <h2 class="fw-semibold mb-1">
                     Relatórios
                 </h2>
+                <p class="periodo-relatorio">
+
+    Período:
+
+    <?php
+
+    if ($periodo === "hoje") {
+
+        echo "Hoje";
+
+    } elseif ($periodo === "ontem") {
+
+        echo "Ontem";
+
+    } elseif ($periodo === "7dias") {
+
+        echo "Últimos 7 dias";
+
+    } elseif ($periodo === "ano") {
+
+        echo "Este ano";
+
+    } else {
+
+        echo "Este mês";
+
+    }
+
+    ?>
+
+</p>
 
                 <p class="text-muted mb-0">
                     Analise o desempenho do seu negócio.
@@ -395,6 +503,13 @@ $stmt->close();
 
 
             <!-- FILTRO -->
+             <button
+    type="button"
+    class="btn btn-outline-secondary"
+    onclick="window.print()"
+>
+    🖨️ Imprimir
+</button>
 
             <form method="GET">
 
@@ -462,7 +577,6 @@ $stmt->close();
 
                     </select>
 
-
                     <button
                         type="submit"
                         class="btn btn-success"
@@ -475,7 +589,6 @@ $stmt->close();
             </form>
 
         </div>
-
 
         <!-- RESUMO -->
 
@@ -501,7 +614,6 @@ $stmt->close();
                 </div>
 
             </div>
-
 
             <div class="col-md-6 col-xl-3">
 
@@ -921,15 +1033,447 @@ $stmt->close();
                     </div>
 
                 </div>
+                                       
+            </div>
+            <!-- GRÁFICO DE FORMAS DE PAGAMENTO -->
+
+<div class="col-lg-6">
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-body">
+
+            <h5 class="mb-4">
+                Distribuição por forma de pagamento
+            </h5>
+
+            <div style="height: 350px;">
+
+                <canvas id="graficoPagamentos"></canvas>
 
             </div>
 
+        </div>
+
+    </div>
+
+</div>
         </div>
 
     </section>
 
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+const dadosVendas = <?php
+echo json_encode($dados_grafico);
+?>;
+
+const labels = dadosVendas.map(
+    item => item.dia
+);
+
+const valores = dadosVendas.map(
+    item => item.total
+);
+
+
+new Chart(
+    document.getElementById("graficoVendas"),
+    {
+
+        type: "line",
+
+        data: {
+
+            labels: labels,
+
+            datasets: [
+
+                {
+
+                    label: "Vendas",
+
+                    data: valores,
+
+                    tension: 0.4,
+
+                    fill: true
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    display: false
+                }
+
+            },
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true,
+
+                    ticks: {
+
+                        callback: function(value) {
+
+                            return value.toLocaleString(
+                                "pt-PT"
+                            ) + " Kz";
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
+</script>
+<script>
+
+const dadosPagamentos = [
+
+<?php
+
+$pagamentos->data_seek(0);
+
+while ($pagamento = $pagamentos->fetch_assoc()) {
+
+    echo json_encode([
+        "forma" => ucfirst($pagamento["forma_pagamento"]),
+        "total" => (float) $pagamento["total"]
+    ]);
+
+    echo ",";
+
+}
+
+?>
+
+];
+
+
+const labelsPagamentos = dadosPagamentos.map(
+    item => item.forma
+);
+
+const valoresPagamentos = dadosPagamentos.map(
+    item => item.total
+);
+
+
+new Chart(
+    document.getElementById("graficoPagamentos"),
+    {
+
+        type: "doughnut",
+
+        data: {
+
+            labels: labelsPagamentos,
+
+            datasets: [
+
+                {
+
+                    data: valoresPagamentos
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+
+                    position: "bottom"
+
+                },
+
+                tooltip: {
+
+                    callbacks: {
+
+                        label: function(context) {
+
+                            const valor =
+                                context.raw.toLocaleString(
+                                    "pt-PT"
+                                );
+
+                            return valor + " Kz";
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
+</script>
+<style>
+    .rodape-impressao {
+    display: none;
+ }
+.periodo-relatorio {
+
+    display: none;
+
+}
+.cabecalho-impressao {
+    display: none;
+}
+@media print {
+    .cabecalho-impressao {
+
+    display: block;
+
+    text-align: center;
+
+    margin-bottom: 30px;
+
+    padding-bottom: 20px;
+
+    border-bottom: 2px solid #222;
+
+}
+
+.cabecalho-impressao h1 {
+
+    margin: 0;
+
+    font-size: 30px;
+
+    font-weight: 700;
+
+ }
+
+.cabecalho-impressao p {
+
+    margin: 2px 0 15px;
+
+    color: #555;
+
+ }
+
+.cabecalho-impressao h2 {
+
+    margin: 0 0 15px;
+
+    font-size: 22px;
+
+ }
+
+.info-relatorio {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 40px;
+
+    font-size: 13px;
+
+ }
+
+
+    /* ==========================================
+       OCULTAR ELEMENTOS DA INTERFACE
+       ========================================== */
+
+    .sidebar,
+    .topbar,
+    .btn,
+    form,
+    nav,
+    footer {
+
+        display: none !important;
+
+    }
+
+
+    /* ==========================================
+       CONFIGURAÇÃO DA PÁGINA
+       ========================================== */
+
+    body {
+
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+
+    }
+
+
+    .main {
+
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+
+    }
+
+
+    .content {
+
+        padding: 25px !important;
+
+    }
+
+
+    /* ==========================================
+       CABEÇALHO DO RELATÓRIO
+       ========================================== */
+
+    .content::before {
+
+        content:
+            "BIZFLOW\A"
+            "Sistema de Gestão Empresarial\A\A"
+            "RELATÓRIO DE VENDAS";
+
+        white-space: pre;
+
+        display: block;
+
+        text-align: center;
+
+        font-weight: 700;
+
+        font-size: 24px;
+
+        line-height: 1.5;
+
+        margin-bottom: 25px;
+
+        padding-bottom: 15px;
+
+        border-bottom: 2px solid #222;
+
+    }
+
+
+    /* ==========================================
+       CARDS
+       ========================================== */
+
+    .card,
+    .stat-card {
+
+        box-shadow: none !important;
+
+        border: 1px solid #ddd !important;
+
+        break-inside: avoid;
+
+    }
+
+
+    /* ==========================================
+       TABELAS
+       ========================================== */
+
+    table {
+
+        width: 100% !important;
+
+    }
+
+
+    /* ==========================================
+       GRÁFICOS
+       ========================================== */
+
+    canvas {
+
+        max-width: 100% !important;
+
+    }
+
+
+    /* ==========================================
+       EVITAR CORTES
+       ========================================== */
+
+    .row {
+
+        break-inside: avoid;
+
+    }
+    .periodo-relatorio {
+
+    display: block !important;
+
+    }
+    .rodape-impressao {
+
+    display: block;
+
+    text-align: center;
+
+    margin-top: 30px;
+
+    padding-top: 15px;
+
+    border-top: 1px solid #ddd;
+
+    font-size: 12px;
+
+    color: #666;
+
+ }
+
+
+}
+
+
+</style>
+
+<!-- RODAPÉ DO RELATÓRIO -->
+
+<div class="rodape-impressao">
+
+    Relatório gerado por José Ngimbi
+    — Sistema de Gestão Empresarial
+
+</div>
 
 <?php
 
