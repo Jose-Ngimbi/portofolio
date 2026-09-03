@@ -7,7 +7,13 @@ if (!isset($_SESSION["id_usuario"])) {
     exit;
 }
 
+require_once "../includes/permissions.php";
 require_once "../config/database.php";
+
+permitirAcesso([
+    "administrador",
+    "gerente"
+]);
 
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {

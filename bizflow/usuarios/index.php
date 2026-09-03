@@ -1,5 +1,5 @@
 <?php
-
+require_once "../includes/admin_only.php";
 require_once "../includes/header.php";
 require_once "../includes/sidebar.php";
 require_once "../config/database.php";
