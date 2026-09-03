@@ -2,7 +2,14 @@
 
 require_once "../includes/header.php";
 require_once "../includes/sidebar.php";
+require_once "../includes/permissions.php";
 require_once "../config/database.php";
+
+permitirAcesso([
+    "administrador",
+    "gerente",
+    "funcionario"
+]);
 
 
 // ==========================================
@@ -503,13 +510,20 @@ $stmt->close();
 
 
             <!-- FILTRO -->
-             <button
+       
+    <?php if (
+    $_SESSION["nivel"] === "administrador" ||
+    $_SESSION["nivel"] === "gerente"
+          ): ?>
+
+    <button 
     type="button"
     class="btn btn-outline-secondary"
-    onclick="window.print()"
->
-    🖨️ Imprimir
-</button>
+    onclick="window.print()">
+        🖨️ Imprimir
+    </button>
+
+     <?php endif; ?>
 
             <form method="GET">
 
@@ -1247,6 +1261,32 @@ new Chart(
 );
 
 </script>
+
+ <script>
+
+   document.addEventListener("keydown", function(event) {
+
+    <?php if (
+        $_SESSION["nivel"] !== "administrador" &&
+        $_SESSION["nivel"] !== "gerente"
+    ): ?>
+
+        if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key.toLowerCase() === "p"
+        ) {
+
+            event.preventDefault();
+
+            alert("A impressão de relatórios não está disponível para funcionários.");
+
+        }
+
+    <?php endif; ?>
+
+    });
+
+ </script>
 <style>
     .rodape-impressao {
     display: none;
