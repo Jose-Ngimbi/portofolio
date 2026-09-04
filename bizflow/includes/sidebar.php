@@ -6,42 +6,76 @@
 
     <nav class="menu">
 
+        <!-- DASHBOARD -->
         <a href="/dashboard/" class="menu-item">
             <span>🏠</span>
             Dashboard
         </a>
 
+        <!-- CLIENTES -->
         <a href="/clientes/" class="menu-item">
             <span>👥</span>
             Clientes
         </a>
 
-        <a href="/categorias/" class="menu-item">
-            <span>🏷️</span>
-            Categorias
-        </a>
+        <!-- CATEGORIAS: ADMINISTRADOR E GERENTE -->
+        <?php if (
+            isset($_SESSION["nivel"]) &&
+            (
+                $_SESSION["nivel"] === "administrador" ||
+                $_SESSION["nivel"] === "gerente"
+            )
+        ): ?>
 
+            <a href="/categorias/" class="menu-item">
+                <span>🏷️</span>
+                Categorias
+            </a>
+
+        <?php endif; ?>
+
+
+        <!-- PRODUTOS -->
         <a href="/produtos/" class="menu-item">
             <span>📦</span>
             Produtos
         </a>
 
+        <!-- VENDAS -->
         <a href="/vendas/" class="menu-item">
             <span>🛒</span>
             Vendas
         </a>
 
-        <a href="/caixa/" class="menu-item">
-            <span>💰</span>
-            Caixa
-        </a>
+        <!-- CAIXA: ADMINISTRADOR E GERENTE -->
+        <?php if (
+            isset($_SESSION["nivel"]) &&
+            (
+                $_SESSION["nivel"] === "administrador" ||
+                $_SESSION["nivel"] === "gerente"
+            )
+        ): ?>
 
+            <a href="/caixa/" class="menu-item">
+                <span>💰</span>
+                Caixa
+            </a>
+
+        <?php endif; ?>
+
+
+        <!-- RELATÓRIOS -->
         <a href="/relatorios/" class="menu-item">
             <span>📊</span>
             Relatórios
         </a>
 
-        <?php if (isset($_SESSION["nivel"]) && $_SESSION["nivel"] === "administrador"): ?>
+
+        <!-- USUÁRIOS: APENAS ADMINISTRADOR -->
+        <?php if (
+            isset($_SESSION["nivel"]) &&
+            $_SESSION["nivel"] === "administrador"
+        ): ?>
 
             <a href="/usuarios/" class="menu-item">
                 <span>👤</span>
@@ -51,6 +85,7 @@
         <?php endif; ?>
 
     </nav>
+
 
     <div class="sidebar-bottom">
 

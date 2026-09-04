@@ -26,7 +26,7 @@ if (!isset($_SESSION["id_usuario"])) {
 function permitirAcesso($niveisPermitidos)
 {
 
-    if (!in_array($_SESSION["nivel"], $niveisPermitidos)) {
+    if (!in_array($_SESSION["nivel"], $niveisPermitidos, true)) {
 
         header("Location: ../dashboard/");
         exit;

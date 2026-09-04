@@ -1,7 +1,5 @@
 <?php
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -13,6 +11,8 @@ permitirAcesso([
 // ==============================
 // PAGINAÇÃO
 // ==============================
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 $por_pagina = 10;
 
