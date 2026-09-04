@@ -1,7 +1,4 @@
 <?php
-
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -9,6 +6,9 @@ permitirAcesso([
     "administrador",
     "gerente"
 ]);
+
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 $erro = "";
 

@@ -1,12 +1,4 @@
 <?php
-
-session_start();
-
-if (!isset($_SESSION["id_usuario"])) {
-    header("Location: ../auth/login.php");
-    exit;
-}
-
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -14,6 +6,7 @@ permitirAcesso([
     "administrador",
     "gerente"
 ]);
+
 
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
