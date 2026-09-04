@@ -1,7 +1,6 @@
 <?php
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -108,7 +107,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 }
-
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 ?>
 
 <main class="main">

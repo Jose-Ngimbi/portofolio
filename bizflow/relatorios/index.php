@@ -1,7 +1,6 @@
 <?php
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -342,6 +341,8 @@ $top_clientes =
 
 $stmt->close();
 
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 ?>
 
 <main class="main">
@@ -652,77 +653,59 @@ $stmt->close();
 
             <div class="col-md-6 col-xl-3">
 
-                <div class="stat-card">
+                    <div class="stat-card">
+  
+                       <div class="stat-title">
+                          Descontos
+                        </div>
 
-                    <div class="stat-title">
-                        Descontos
-                    </div>
+                        <div class="stat-value">
 
-                    <div class="stat-value">
+                            <?php
 
-                        <?php
-
-                        echo number_format(
+                            echo number_format(
                             $desconto,
                             2,
                             ",",
                             "."
-                        );
+                             );
 
-                        ?>
+                            ?>
 
-                        Kz
+                             Kz
 
+                        </div>
+  
                     </div>
-
-                </div>
 
             </div>
 
 
-            <div class="col-md-6 col-xl-3">
+                <div class="col-md-6 col-xl-3">
 
-                <div class="stat-card">
+                    <div class="stat-card">
 
-                    <div class="stat-title">
-                        Faturamento
-                    </div>
+                        <div class="stat-title">
+                         Faturamento
+                        </div>
 
-                    <!-- GRÁFICO DE VENDAS -->
+     
+                        <div class="stat-value">
 
-<div class="card border-0 shadow-sm mb-4">
+                          <?php
 
-    <div class="card-body">
-
-        <h5 class="mb-4">
-            Vendas por dia
-        </h5>
-
-        <div style="height: 350px;">
-
-            <canvas id="graficoVendas"></canvas>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-                    <div class="stat-value">
-
-                        <?php
-
-                        echo number_format(
+                         echo number_format(
                             $total_vendas,
                             2,
                             ",",
                             "."
-                        );
+                          );
 
-                        ?>
+                           ?>
 
-                        Kz
+                           Kz
+ 
+                        </div>
 
                     </div>
 
@@ -730,8 +713,27 @@ $stmt->close();
 
             </div>
 
-        </div>
 
+                           <!-- GRÁFICO DE VENDAS -->
+
+        
+                <div class="card border-0 shadow-sm mb-4">
+
+                    <div class="card-body">
+
+                        <h5 class="mb-4">
+                             Vendas por dia
+                        </h5>
+
+                        <div style="height: 350px;">
+
+                         <canvas id="graficoVendas"></canvas>
+
+                         </div>
+
+                    </div>
+
+                </div>
 
         <div class="row g-4">
 
@@ -1048,33 +1050,31 @@ $stmt->close();
 
                 </div>
                                        
-            </div>
+             </div>
             <!-- GRÁFICO DE FORMAS DE PAGAMENTO -->
 
-<div class="col-lg-6">
+            <div class="col-lg-6">
 
-    <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm">
 
-        <div class="card-body">
+                 <div class="card-body">
 
-            <h5 class="mb-4">
-                Distribuição por forma de pagamento
-            </h5>
+                  <h5 class="mb-4">
+                     Distribuição por forma de pagamento
+                  </h5>
 
-            <div style="height: 350px;">
+                      <div style="height: 350px;">
+                        <canvas id="graficoPagamentos"></canvas>
+                      </div>
 
-                <canvas id="graficoPagamentos"></canvas>
+                 </div>
+ 
+                </div>
 
             </div>
+     </div>
 
-        </div>
-
-    </div>
-
-</div>
-        </div>
-
-    </section>
+</section>
 
 </main>
 
@@ -1398,36 +1398,7 @@ new Chart(
     }
 
 
-    /* ==========================================
-       CABEÇALHO DO RELATÓRIO
-       ========================================== */
-
-    .content::before {
-
-        content:
-            "BIZFLOW\A"
-            "Sistema de Gestão Empresarial\A\A"
-            "RELATÓRIO DE VENDAS";
-
-        white-space: pre;
-
-        display: block;
-
-        text-align: center;
-
-        font-weight: 700;
-
-        font-size: 24px;
-
-        line-height: 1.5;
-
-        margin-bottom: 25px;
-
-        padding-bottom: 15px;
-
-        border-bottom: 2px solid #222;
-
-    }
+    
 
 
     /* ==========================================

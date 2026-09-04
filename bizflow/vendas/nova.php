@@ -9,9 +9,6 @@ permitirAcesso([
     "funcionario"
 ]);
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
-
 $erro = "";
 
 
@@ -51,7 +48,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $id_cliente = $_POST["id_cliente"] ?? "";
     $forma_pagamento = $_POST["forma_pagamento"] ?? "";
     $desconto = $_POST["desconto"] ?? 0;
-
     $produtos_post = $_POST["produto"] ?? [];
     $quantidades_post = $_POST["quantidade"] ?? [];
 
@@ -60,12 +56,69 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // VALIDAÇÕES BÁSICAS
     // ==========================================
 
-    if ($id_cliente !== "" && !filter_var($id_cliente, FILTER_VALIDATE_INT)) {
+    // ==========================================
+    // VALIDAR CLIENTE
+    // ==========================================
 
-        $erro = "Cliente inválido.";
+    if ($id_cliente === "") {
 
-    } elseif (
-        !in_array(
+        // Venda sem cliente
+        $id_cliente = null;
+
+    } else {
+
+        $id_cliente = filter_var(
+            $id_cliente,
+            FILTER_VALIDATE_INT
+        );
+
+        if ($id_cliente === false || $id_cliente <= 0) {
+
+            $erro = "Cliente inválido.";
+
+        } else {
+
+            $sql_cliente = "SELECT id_cliente
+                            FROM clientes
+                            WHERE id_cliente = ?
+                            LIMIT 1";
+
+            $stmt_cliente = $conn->prepare($sql_cliente);
+
+            if (!$stmt_cliente) {
+
+                $erro = "Erro ao validar o cliente.";
+
+            } else {
+
+                $stmt_cliente->bind_param(
+                    "i",
+                    $id_cliente
+                );
+
+                $stmt_cliente->execute();
+
+                $resultado_cliente =
+                    $stmt_cliente->get_result();
+
+                if ($resultado_cliente->num_rows !== 1) {
+
+                    $erro = "O cliente selecionado não existe.";
+                }
+
+                $stmt_cliente->close();
+            }
+        }
+    }
+
+
+    // ==========================================
+    // CONTINUAR VALIDAÇÕES
+    // ==========================================
+
+    if ($erro === "") {
+
+        if (!in_array(
             $forma_pagamento,
             [
                 "dinheiro",
@@ -74,322 +127,345 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 "cartao"
             ],
             true
-        )
-    ) {
+        )) {
 
-        $erro = "Forma de pagamento inválida.";
+            $erro = "Forma de pagamento inválida.";
 
-    } elseif (!is_numeric($desconto) || $desconto < 0) {
+        } elseif (!is_numeric($desconto) || $desconto < 0) {
 
-        $erro = "Desconto inválido.";
+            $erro = "Desconto inválido.";
 
-    } elseif (empty($produtos_post)) {
+        } elseif (empty($produtos_post)) {
 
-        $erro = "Adicione pelo menos um produto à venda.";
+            $erro = "Adicione pelo menos um produto à venda.";
 
-    } else {
+        } else {
 
-        $desconto = (float) $desconto;
-
-        $itens = [];
-        $subtotal = 0;
-
-
-        // ==========================================
-        // PROCESSAR PRODUTOS
-        // ==========================================
-
-        foreach ($produtos_post as $indice => $id_produto) {
-
-            $id_produto = filter_var(
-                $id_produto,
-                FILTER_VALIDATE_INT
-            );
-
-            $quantidade = $quantidades_post[$indice] ?? 0;
-
-            $quantidade = filter_var(
-                $quantidade,
-                FILTER_VALIDATE_INT
-            );
-
-
-            if (!$id_produto || !$quantidade || $quantidade <= 0) {
-
-                $erro = "Produto ou quantidade inválida.";
-                break;
-            }
-
-
-            // Buscar produto na BD
-            $sql = "SELECT
-                        id_produto,
-                        nome,
-                        preco_venda,
-                        quantidade
-                    FROM produtos
-                    WHERE id_produto = ?
-                      AND status = 'ativo'
-                    LIMIT 1";
-
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("i", $id_produto);
-            $stmt->execute();
-
-            $resultado = $stmt->get_result();
-
-            if ($resultado->num_rows !== 1) {
-
-                $stmt->close();
-
-                $erro = "Um dos produtos selecionados não existe.";
-                break;
-            }
-
-            $produto = $resultado->fetch_assoc();
-
-            $stmt->close();
+            $desconto = (float) $desconto;
+            $itens = [];
+            $subtotal = 0;
 
 
             // ==========================================
-            // VERIFICAR ESTOQUE
+            // PROCESSAR PRODUTOS
             // ==========================================
 
-            if ($quantidade > $produto["quantidade"]) {
+            foreach ($produtos_post as $indice => $id_produto) {
 
-                $erro =
-                    "Estoque insuficiente para o produto: "
-                    . $produto["nome"];
-
-                break;
-            }
-
-
-            // ==========================================
-            // CALCULAR SUBTOTAL DO ITEM
-            // ==========================================
-
-            $preco_unitario = (float) $produto["preco_venda"];
-
-            $subtotal_item =
-                $preco_unitario * $quantidade;
-
-            $subtotal += $subtotal_item;
-
-
-            $itens[] = [
-
-                "id_produto" =>
+                $id_produto = filter_var(
                     $id_produto,
-
-                "quantidade" =>
-                    $quantidade,
-
-                "preco_unitario" =>
-                    $preco_unitario,
-
-                "subtotal" =>
-                    $subtotal_item
-
-            ];
-        }
-
-
-        // ==========================================
-        // CALCULAR TOTAL
-        // ==========================================
-
-        if ($erro === "") {
-
-            if ($desconto > $subtotal) {
-
-                $erro =
-                    "O desconto não pode ser maior que o subtotal.";
-
-            } else {
-
-                $total = $subtotal - $desconto;
-            }
-        }
-
-
-        // ==========================================
-        // GRAVAR VENDA
-        // ==========================================
-
-        if ($erro === "") {
-
-            try {
-
-                $conn->begin_transaction();
-
-
-                // ----------------------------------
-                // 1. CRIAR VENDA
-                // ----------------------------------
-
-                $sql = "INSERT INTO vendas
-                        (
-                            id_cliente,
-                            id_usuario,
-                            subtotal,
-                            desconto,
-                            total,
-                            forma_pagamento
-                        )
-                        VALUES (?, ?, ?, ?, ?, ?)";
-
-                $stmt = $conn->prepare($sql);
-
-                $id_usuario =
-                    $_SESSION["id_usuario"];
-
-                $stmt->bind_param(
-                    "iiddds",
-                    $id_cliente,
-                    $id_usuario,
-                    $subtotal,
-                    $desconto,
-                    $total,
-                    $forma_pagamento
+                    FILTER_VALIDATE_INT
                 );
 
-                $stmt->execute();
+                $quantidade = $quantidades_post[$indice] ?? 0;
 
-                $id_venda =
-                    $conn->insert_id;
-
-                $stmt->close();
-
-
-                // ----------------------------------
-                // 2. INSERIR ITENS
-                // ----------------------------------
-
-                foreach ($itens as $item) {
-
-                    $sql = "INSERT INTO venda_itens
-                            (
-                                id_venda,
-                                id_produto,
-                                quantidade,
-                                preco_unitario,
-                                subtotal
-                            )
-                            VALUES (?, ?, ?, ?, ?)";
-
-                    $stmt =
-                        $conn->prepare($sql);
-
-                    $stmt->bind_param(
-                        "iiidd",
-                        $id_venda,
-                        $item["id_produto"],
-                        $item["quantidade"],
-                        $item["preco_unitario"],
-                        $item["subtotal"]
-                    );
-
-                    $stmt->execute();
-
-                    $stmt->close();
+                $quantidade = filter_var(
+                    $quantidade,
+                    FILTER_VALIDATE_INT
+                );
 
 
-                    // ----------------------------------
-                    // 3. BAIXAR ESTOQUE
-                    // ----------------------------------
+                if (
+                    !$id_produto ||
+                    !$quantidade ||
+                    $quantidade <= 0
+                ) {
 
-                    $sql = "UPDATE produtos
-                            SET quantidade =
-                                quantidade - ?
-                            WHERE id_produto = ?
-                              AND quantidade >= ?";
-
-                    $stmt =
-                        $conn->prepare($sql);
-
-                    $stmt->bind_param(
-                        "iii",
-                        $item["quantidade"],
-                        $item["id_produto"],
-                        $item["quantidade"]
-                    );
-
-                    $stmt->execute();
-
-
-                    if ($stmt->affected_rows !== 1) {
-
-                        throw new Exception(
-                            "Não foi possível atualizar o estoque."
-                        );
-                    }
-
-                    $stmt->close();
+                    $erro = "Produto ou quantidade inválida.";
+                    break;
                 }
 
 
-                // ----------------------------------
-                // 4. REGISTRAR NO CAIXA
-                // ----------------------------------
+                // ==========================================
+                // BUSCAR PRODUTO NA BD
+                // ==========================================
 
-                $descricao =
-                    "Venda #" . $id_venda;
+                $sql = "SELECT
+                            id_produto,
+                            nome,
+                            preco_venda,
+                            quantidade
+                        FROM produtos
+                        WHERE id_produto = ?
+                          AND status = 'ativo'
+                        LIMIT 1";
 
-                $tipo = "entrada";
-
-                $sql = "INSERT INTO movimentos_caixa
-                        (
-                            id_usuario,
-                            tipo,
-                            valor,
-                            descricao
-                        )
-                        VALUES (?, ?, ?, ?)";
-
-                $stmt =
-                    $conn->prepare($sql);
+                $stmt = $conn->prepare($sql);
 
                 $stmt->bind_param(
-                    "isds",
-                    $id_usuario,
-                    $tipo,
-                    $total,
-                    $descricao
+                    "i",
+                    $id_produto
                 );
 
                 $stmt->execute();
 
+                $resultado = $stmt->get_result();
+
+
+                if ($resultado->num_rows !== 1) {
+
+                    $stmt->close();
+
+                    $erro =
+                        "Um dos produtos selecionados não existe.";
+
+                    break;
+                }
+
+
+                $produto = $resultado->fetch_assoc();
+
                 $stmt->close();
 
 
-                // ----------------------------------
-                // 5. CONFIRMAR
-                // ----------------------------------
+                // ==========================================
+                // VERIFICAR ESTOQUE
+                // ==========================================
 
-                $conn->commit();
+                if ($quantidade > $produto["quantidade"]) {
 
+                    $erro =
+                        "Estoque insuficiente para o produto: "
+                        . $produto["nome"];
 
-                header(
-                    "Location: visualizar.php?id="
-                    . $id_venda
-                    . "&sucesso=Venda registrada com sucesso!"
-                );
-
-                exit;
+                    break;
+                }
 
 
-            } catch (Exception $e) {
+                // ==========================================
+                // CALCULAR SUBTOTAL DO ITEM
+                // ==========================================
 
-                $conn->rollback();
+                $preco_unitario =
+                    (float) $produto["preco_venda"];
 
-                $erro =
-                    "Não foi possível registrar a venda: "
-                    . $e->getMessage();
+                $subtotal_item =
+                    $preco_unitario * $quantidade;
+
+                $subtotal += $subtotal_item;
+
+
+                $itens[] = [
+
+                    "id_produto" =>
+                        $id_produto,
+
+                    "quantidade" =>
+                        $quantidade,
+
+                    "preco_unitario" =>
+                        $preco_unitario,
+
+                    "subtotal" =>
+                        $subtotal_item
+                ];
+            }
+
+
+            // ==========================================
+            // CALCULAR TOTAL
+            // ==========================================
+
+            if ($erro === "") {
+
+                if ($desconto > $subtotal) {
+
+                    $erro =
+                        "O desconto não pode ser maior que o subtotal.";
+
+                } else {
+
+                    $total =
+                        $subtotal - $desconto;
+                }
+            }
+
+
+            // ==========================================
+            // GRAVAR VENDA
+            // ==========================================
+
+            if ($erro === "") {
+
+                try {
+
+                    $conn->begin_transaction();
+
+
+                    // ----------------------------------
+                    // 1. CRIAR VENDA
+                    // ----------------------------------
+
+                    $sql = "INSERT INTO vendas
+                            (
+                                id_cliente,
+                                id_usuario,
+                                subtotal,
+                                desconto,
+                                total,
+                                forma_pagamento
+                            )
+                            VALUES (?, ?, ?, ?, ?, ?)";
+
+                    $stmt = $conn->prepare($sql);
+
+                    $id_usuario =
+                        $_SESSION["id_usuario"];
+
+                    $stmt->bind_param(
+                        "iiddds",
+                        $id_cliente,
+                        $id_usuario,
+                        $subtotal,
+                        $desconto,
+                        $total,
+                        $forma_pagamento
+                    );
+
+                    $stmt->execute();
+
+                    $id_venda =
+                        $conn->insert_id;
+
+                    $stmt->close();
+
+
+                    // ----------------------------------
+                    // 2. INSERIR ITENS
+                    // ----------------------------------
+
+                    foreach ($itens as $item) {
+
+                        $sql = "INSERT INTO venda_itens
+                                (
+                                    id_venda,
+                                    id_produto,
+                                    quantidade,
+                                    preco_unitario,
+                                    subtotal
+                                )
+                                VALUES (?, ?, ?, ?, ?)";
+
+                        $stmt =
+                            $conn->prepare($sql);
+
+                        $stmt->bind_param(
+                            "iiidd",
+                            $id_venda,
+                            $item["id_produto"],
+                            $item["quantidade"],
+                            $item["preco_unitario"],
+                            $item["subtotal"]
+                        );
+
+                        $stmt->execute();
+
+                        $stmt->close();
+
+
+                        // ----------------------------------
+                        // 3. BAIXAR ESTOQUE
+                        // ----------------------------------
+
+                        $sql = "UPDATE produtos
+                                SET quantidade =
+                                    quantidade - ?
+                                WHERE id_produto = ?
+                                  AND quantidade >= ?";
+
+                        $stmt =
+                            $conn->prepare($sql);
+
+                        $stmt->bind_param(
+                            "iii",
+                            $item["quantidade"],
+                            $item["id_produto"],
+                            $item["quantidade"]
+                        );
+
+                        $stmt->execute();
+
+
+                        if ($stmt->affected_rows !== 1) {
+
+                            throw new Exception(
+                                "Não foi possível atualizar o estoque."
+                            );
+                        }
+
+                        $stmt->close();
+                    }
+
+
+                    // ----------------------------------
+                    // 4. REGISTRAR NO CAIXA
+                    // ----------------------------------
+
+                    $descricao =
+                        "Venda #" . $id_venda;
+
+                    $tipo = "entrada";
+
+                    $sql = "INSERT INTO movimentos_caixa
+                            (
+                                id_usuario,
+                                tipo,
+                                valor,
+                                descricao
+                            )
+                            VALUES (?, ?, ?, ?)";
+
+                    $stmt =
+                        $conn->prepare($sql);
+
+                    $stmt->bind_param(
+                        "isds",
+                        $id_usuario,
+                        $tipo,
+                        $total,
+                        $descricao
+                    );
+
+                    $stmt->execute();
+
+                    $stmt->close();
+
+
+                    // ----------------------------------
+                    // 5. CONFIRMAR
+                    // ----------------------------------
+
+                    $conn->commit();
+
+
+                    header(
+                        "Location: visualizar.php?id="
+                        . $id_venda
+                        . "&sucesso=Venda registrada com sucesso!"
+                    );
+
+                    exit;
+
+
+                } catch (Exception $e) {
+
+                    $conn->rollback();
+
+                    $erro =
+                        "Não foi possível registrar a venda: "
+                        . $e->getMessage();
+                }
             }
         }
     }
 }
+
+?>
+
+<?php
+
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 ?>
 

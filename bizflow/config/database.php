@@ -1,16 +1,30 @@
 <?php
 
+// Fazer o MySQLi lançar Exceptions em caso de erro
+mysqli_report(
+    MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT
+);
+
 $host = "localhost";
 $usuario = "root";
 $senha = "";
 $banco = "portofolio";
 
-$conn = new mysqli($host, $usuario, $senha, $banco);
+try {
 
-if ($conn->connect_error) {
-    die("Erro na ligação com a base de dados: " . $conn->connect_error);
+    $conn = new mysqli(
+        $host,
+        $usuario,
+        $senha,
+        $banco
+    );
+
+    $conn->set_charset("utf8mb4");
+
+} catch (mysqli_sql_exception $e) {
+
+    die(
+        "Erro na ligação com a base de dados."
+    );
 }
-
-$conn->set_charset("utf8mb4");
-
 ?>
