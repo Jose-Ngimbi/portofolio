@@ -1,7 +1,6 @@
 <?php
 
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
+
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -10,6 +9,8 @@ permitirAcesso([
     "gerente",
     "funcionario"
 ]);
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 
 $erro = "";
 
@@ -83,14 +84,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $erro = "O preço de venda não pode ser menor que o preço de compra.";
 
-    } elseif (!filter_var($quantidade, FILTER_VALIDATE_INT) || $quantidade < 0) {
-
-        $erro = "A quantidade deve ser um número inteiro igual ou superior a zero.";
-
-    } elseif (!filter_var($estoque_minimo, FILTER_VALIDATE_INT) || $estoque_minimo < 0) {
-
-        $erro = "O estoque mínimo deve ser um número inteiro igual ou superior a zero.";
-
+        } elseif (
+    filter_var($quantidade, FILTER_VALIDATE_INT) === false ||
+    (int)$quantidade < 0
+   ) {
+    $erro = "A quantidade deve ser um número inteiro igual ou superior a zero.";
+   } elseif (
+    filter_var($estoque_minimo, FILTER_VALIDATE_INT) === false ||
+    (int)$estoque_minimo < 0
+   ) {
+    $erro = "O estoque mínimo deve ser um número inteiro igual ou superior a zero.";
     } elseif (
         $status !== "ativo" &&
         $status !== "inativo"
@@ -100,15 +103,58 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     } else {
 
-        if ($id_categoria === "") {
+    // Validar categoria
+    if ($id_categoria === "") {
 
-            $id_categoria = null;
+        $id_categoria = null;
+
+    } else {
+
+        $id_categoria = filter_var(
+            $id_categoria,
+            FILTER_VALIDATE_INT
+        );
+
+        if ($id_categoria === false || $id_categoria <= 0) {
+
+            $erro = "Categoria inválida.";
 
         } else {
 
-            $id_categoria = (int) $id_categoria;
-        }
+            $sql_categoria = "SELECT id_categoria
+                              FROM categorias
+                              WHERE id_categoria = ?
+                              LIMIT 1";
 
+            $stmt_categoria = $conn->prepare($sql_categoria);
+
+            if (!$stmt_categoria) {
+
+                $erro = "Erro ao validar a categoria.";
+
+            } else {
+
+                $stmt_categoria->bind_param(
+                    "i",
+                    $id_categoria
+                );
+
+                $stmt_categoria->execute();
+
+                $resultado_categoria = $stmt_categoria->get_result();
+
+                if ($resultado_categoria->num_rows !== 1) {
+
+                    $erro = "A categoria selecionada não existe.";
+                }
+
+                $stmt_categoria->close();
+            }
+        }
+    }
+
+    // Só atualizar se não houver erro
+    if ($erro === "") {
 
         $sql = "UPDATE produtos
                 SET nome = ?,
@@ -142,7 +188,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $id
             );
 
-
             if ($stmt->execute()) {
 
                 header(
@@ -159,7 +204,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt->close();
         }
     }
+
+    }
 }
+
 
 ?>
 

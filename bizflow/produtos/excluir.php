@@ -1,12 +1,4 @@
 <?php
-
-session_start();
-
-if (!isset($_SESSION["id_usuario"])) {
-    header("Location: ../auth/login.php");
-    exit;
-}
-
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -50,7 +42,7 @@ if (!$stmt) {
 $stmt->bind_param("i", $id);
 
 
-if ($stmt->execute()) {
+if ($stmt->execute() && $stmt->affected_rows === 1) {
 
     header(
         "Location: index.php?sucesso=Produto excluído com sucesso!"

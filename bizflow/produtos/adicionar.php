@@ -1,7 +1,4 @@
 <?php
-
-require_once "../includes/header.php";
-require_once "../includes/sidebar.php";
 require_once "../includes/permissions.php";
 require_once "../config/database.php";
 
@@ -11,6 +8,8 @@ permitirAcesso([
     "funcionario"
 ]);
 
+require_once "../includes/header.php";
+require_once "../includes/sidebar.php";
 $erro = "";
 
 
@@ -61,13 +60,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $erro = "O preço de venda não pode ser menor que o preço de compra.";
 
-    } elseif (!filter_var($quantidade, FILTER_VALIDATE_INT) || $quantidade < 0) {
-
-        $erro = "A quantidade deve ser um número inteiro igual ou superior a zero.";
-
-    } elseif (!filter_var($estoque_minimo, FILTER_VALIDATE_INT) || $estoque_minimo < 0) {
-
-        $erro = "O estoque mínimo deve ser um número inteiro igual ou superior a zero.";
+    } elseif (
+    filter_var($quantidade, FILTER_VALIDATE_INT) === false ||
+    (int)$quantidade < 0
+    ) {
+    $erro = "A quantidade deve ser um número inteiro igual ou superior a zero.";
+    } elseif (
+    filter_var($estoque_minimo, FILTER_VALIDATE_INT) === false ||
+    (int)$estoque_minimo < 0
+   ) {
+    $erro = "O estoque mínimo deve ser um número inteiro igual ou superior a zero.";
 
     } elseif (
         $status !== "ativo" &&
