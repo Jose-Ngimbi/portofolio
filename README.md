@@ -154,9 +154,11 @@ Em breve serão adicionadas capturas de ecrã das principais áreas do sistema:
 ![Dashboard](screenshots/dashboard.png)
 
 ### Relatórios
-![Relatórios][screenshots/relatorio.PNG]
+
+![Relatórios][screenshots/relatorio.png]
 
 ### Login
+
 ![Login](screenshots/login.png)
 
 
