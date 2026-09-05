@@ -151,15 +151,15 @@ Em breve serão adicionadas capturas de ecrã das principais áreas do sistema:
 
 ### Dashboard
 
-![Dashboard](screenshots/dashboard.PNG)
+![Dashboard](bizflow/screenshots/dashboard.PNG)
 
 ### Relatórios
 
-![Relatórios](screenshots/relatorio.PNG)
+![Relatórios](bizflow/screenshots/relatorio.PNG)
 
 ### Login
 
-![Login](screenshots/login.PNG)
+![Login](bizflow/screenshots/login.PNG)
 
 
 ---
