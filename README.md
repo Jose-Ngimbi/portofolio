@@ -154,7 +154,7 @@ Em breve serão adicionadas capturas de ecrã das principais áreas do sistema:
 ![Dashboard](screenshots/dashboard.png)
 
 ### Relatórios
-![Relatórios](screenshots/relatorio.png)
+![Relatórios][screenshots/relatorio.PNG]
 
 ### Login
 ![Login](screenshots/login.png)
@@ -201,3 +201,6 @@ https://github.com/Jose-Ngimbi/portofolio
 ## 📄 Licença
 
 Este projeto foi desenvolvido para fins educacionais e de portfólio.
+
+
+[screenshots]: screenshots/relatorio.png
