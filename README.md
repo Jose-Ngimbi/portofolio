@@ -149,13 +149,16 @@ Depois acesse o projeto através do navegador.
 
 Em breve serão adicionadas capturas de ecrã das principais áreas do sistema:
 
-* Dashboard
-* Gestão de clientes
-* Gestão de produtos
-* Vendas
-* Caixa
-* Relatórios
-* Login
+### Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+### Relatórios
+![Relatórios](screenshots/relatorio.png)
+
+### Login
+![Login](screenshots/login.png)
+
 
 ---
 
