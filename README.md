@@ -155,7 +155,7 @@ Em breve serão adicionadas capturas de ecrã das principais áreas do sistema:
 
 ### Relatórios
 
-![Relatórios][screenshots/relatorio.png]
+![Relatórios](screenshots/relatorio.png)
 
 ### Login
 
