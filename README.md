@@ -151,15 +151,15 @@ Em breve serão adicionadas capturas de ecrã das principais áreas do sistema:
 
 ### Dashboard
 
-![Dashboard](screenshots/dashboard.png)
+![Dashboard](screenshots/dashboard.PNG)
 
 ### Relatórios
 
-![Relatórios](screenshots/relatorio.png)
+![Relatórios](screenshots/relatorio.PNG)
 
 ### Login
 
-![Login](screenshots/login.png)
+![Login](screenshots/login.PNG)
 
 
 ---
