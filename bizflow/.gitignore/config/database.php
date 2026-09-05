@@ -5,10 +5,10 @@ mysqli_report(
     MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT
 );
 
-$host = "localhost";
-$usuario = "root";
-$senha = "";
-$banco = "portofolio";
+$host = "sql213.infinityfree.com";
+$usuario = "if0_42835424";
+$senha = "maravilha2026";
+$banco = "if0_42835424_bizflow";
 
 try {
 
